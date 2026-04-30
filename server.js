@@ -1,9 +1,18 @@
 import OpenAI from 'openai'
 import express from 'express'
 import cors from 'cors'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const isProd = process.env.NODE_ENV === 'production'
 
 const app = express()
-app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174'] }))
+app.use(cors({
+  origin: isProd
+    ? (process.env.ALLOWED_ORIGIN || false)
+    : ['http://localhost:5173', 'http://localhost:5174'],
+}))
 app.use(express.json())
 
 const openai = new OpenAI() // reads OPENAI_API_KEY from env
@@ -95,6 +104,12 @@ Rules:
   }
 })
 
-app.listen(3001, () => {
-  console.log('Council API  →  http://localhost:3001')
+if (isProd) {
+  app.use(express.static(path.join(__dirname, 'dist')))
+  app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'dist', 'index.html')))
+}
+
+const PORT = process.env.PORT || 3001
+app.listen(PORT, () => {
+  console.log(`Council API  →  http://localhost:${PORT}`)
 })
